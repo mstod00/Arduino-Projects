@@ -641,7 +641,7 @@ void loop() {
        
   // Make an HTTP request to AirNow.gov:
   //   Old Latitude/Longitude format:
-  //   client.println("GET /aq/forecast/latLong/current/?format=text/csv&latitude=38.8&longitude=-77.3&distance=25&API_KEY=46733A42-8902-45BF-A231-82CDA96CB6F1 HTTP/1.1");
+  //   client.println("GET /aq/forecast/latLong/current/?format=text/csv&latitude=38.8&longitude=-77.3&distance=25&API_KEY=46733A42-8902-45BF-A231-XXXXXX HTTP/1.1");
   //   New Zipcode format:
   
   String QueryString = "GET /aq/observation/zipCode/current/?format=text/csv&zipCode=" + zipcode + "&distance=25&API_KEY=" + aqikey + " HTTP/1.1";
