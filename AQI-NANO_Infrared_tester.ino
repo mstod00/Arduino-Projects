@@ -1,4 +1,5 @@
 
+
 // NANO 33 IOT Web client talking to AirNow.gov to get AQI data.
 // ============================================================
 /*
@@ -55,7 +56,9 @@
   // 2021-0210 Set refresh time from 30 minutes to 15 minutes.
   // 2021-0212 Set long time interval if profile #4 selected.
   // 2021-0213 Code cleanup, add zipcode 99705 to profile #1.
-  //
+  // 2021-0218 Add Mars, Pennsylvania (16046) to Profile #2.
+  // 2021-0220 Erase countdown time during 3-second loc display.
+  //           Left-justify all LCD #ifdef #endif pairs.
   // Distributed under royalty-free MIT Creative Commons license;
   // License and credits text must be included in any redistribution.
 
@@ -74,7 +77,7 @@
   MIT license, all text above must be included in any redistribution
  ****************************************************/
 
-char Version[] = "Version 02/13/21";
+char Version[] = "Version 02/20/21";
 // Compiled with Arduino IDE 1.8.13
 
 #include <SPI.h>
@@ -87,7 +90,7 @@ WiFiClient client;
 #define LongDelay 900
 #define ShortDelay 120
 #define Profile1ZipCount 7
-#define Profile2ZipCount 22
+#define Profile2ZipCount 23
 
 #define NUM_LEDS 4
 #define LED_TYPE WS2812B
@@ -136,7 +139,7 @@ char AqiQuality[] = "                                                ";
 char AqiType[] = "     ";
 String AqiColor = "   ";
 String OZONE = "OZONE";
-String BlynkZipCode = "95701"; // Baxter, CA (actually Alta, CA)
+String BlynkZipCode = "95701"; // Baxter (Alta), CA)
 String location = "";
 char None[] = "None ";
 char NoConnection[] = "No Connection";
@@ -308,11 +311,11 @@ void setup() {
   while (status != WL_CONNECTED) {
     Serial.print(".");
     
-  #ifdef LCDcode
+#ifdef LCDcode
     RetryCount--;
     if (RetryCount > 0)
       lcd.print("."); // show progress dots;
-  #endif
+#endif
   
     // Connect to WPA/WPA2 network. 
     // Change this method if using open or WEP network:
@@ -366,7 +369,7 @@ void loop() {
     TimeRemaining = NextRefresh+2; // re-init 
     lineCount = 0; // start fresh
  
-  #ifdef LCDcode  
+#ifdef LCDcode  
     lcd.clear();
     lcd.setCursor(0,0); 
     lcd.print("HTTP Connect SSL");
@@ -375,7 +378,7 @@ void loop() {
     lcd.setCursor(0,1); lcd.print("IP ");
     IPAddress ip = WiFi.localIP();
     lcd.setCursor(3,1); lcd.print(ip);
-  #endif
+#endif
   
     Serial.println();
     Serial.println("Starting connection to remote server...");
@@ -384,12 +387,12 @@ void loop() {
       Serial.print("You are now connected to server ");
       Serial.println(server);
       
-    #ifdef LCDcode
+#ifdef LCDcode
       lcd.clear();
       lcd.setCursor(0,0); 
       lcd.print("Read AirNow Data");
       lcd.setCursor(0,1);
-    #endif
+#endif
 
       if (ZipCodeRoller) {
         CurrentZipLocation++; // Roll to location for next pass
@@ -555,6 +558,11 @@ void loop() {
           location = "Ladera Ranch, CA";
           break; 
           }
+          case 23: {
+          zipcode = "16046";
+          location = "Mars, PA";
+          break; 
+          }
         default: {
           zipcode = "90009";
           location = "Los Angeles, CA";
@@ -613,12 +621,12 @@ void loop() {
       }
     } // end if (ZipCodeProfile == 4)
         
-  #ifdef LCDcode
+#ifdef LCDcode
   String ForString = "In ZipCode ";
   String zipcodeString = ForString + zipcode;
   lcd.print(zipcodeString);
   delay(TimeDelay);
-  #endif
+#endif
 
   AqiValue = -1;
   strcpy(AqiQuality, UnknownQ);
@@ -641,7 +649,7 @@ void loop() {
        
   // Make an HTTP request to AirNow.gov:
   //   Old Latitude/Longitude format:
-  //   client.println("GET /aq/forecast/latLong/current/?format=text/csv&latitude=38.8&longitude=-77.3&distance=25&API_KEY=46733A42-8902-45BF-A231-XXXXXX HTTP/1.1");
+  //   client.println("GET /aq/forecast/latLong/current/?format=text/csv&latitude=38.8&longitude=-77.3&distance=25&API_KEY=XXX-XXX HTTP/1.1");
   //   New Zipcode format:
   
   String QueryString = "GET /aq/observation/zipCode/current/?format=text/csv&zipCode=" + zipcode + "&distance=25&API_KEY=" + aqikey + " HTTP/1.1";
@@ -666,31 +674,31 @@ void loop() {
     CurrentLCDcolor = "BLK";
     }
 
-  #ifdef LCDcode
+#ifdef LCDcode
   lcd.setCursor(0,0); lcd.print(SixteenSpaces);
   lcd.setCursor(11,0); lcd.print(zipcode);
-  #endif
+#endif
     
   if (WiFi.RSSI() == 0) { // no WiFi connection
     
-  #ifdef LCDcode
+#ifdef LCDcode
     lcd.clear();
     lcd.setCursor(0,0); lcd.print(SixteenSpaces); 
     lcd.setCursor(0,0); lcd.print(ssid);
     lcd.setCursor(0,1); lcd.print(SixteenSpaces);
     lcd.setCursor(0,1);
     RetryCount = 12;
-  #endif
+#endif
       
     while (status != WL_CONNECTED) {
       Serial.print("Attempting to connect to SSID: ");
       Serial.println(ssid);
 
-      #ifdef LCDcode
+#ifdef LCDcode
       RetryCount--;
       if (RetryCount > 0)
         lcd.print("."); // show progress dots ...
-      #endif
+#endif
        
      // Connect to WPA/WPA2 network. 
      // Change this method if using open or WEP network:
@@ -704,13 +712,13 @@ void loop() {
    delay(500);
    }
   
- #ifdef LCDcode
+#ifdef LCDcode
    lcd.clear();
    //lcd.setCursor(0,0); 
    //lcd.print(SixteenSpaces);
    //lcd.setCursor(0,1); 
    //lcd.print(ElevenSpaces);
- #endif
+#endif
     
    while (true) {
      if (client.available()) {
@@ -720,7 +728,7 @@ void loop() {
         if (lineCount == 7) { // could be Date/Time string ...
           if ((buffer[0]=='D') && (buffer[1]=='a')) { // is it?
           
-          #ifdef LCDcode
+#ifdef LCDcode
             lcd.clear(); // yes, proceed
             lcd.setCursor(0,0); lcd.print("Date ");
             for (int ii=5; ii<17; ii++) {
@@ -760,24 +768,22 @@ void loop() {
             //digitalWrite(LED_BUILTIN, LOW);
             //delay(1000);
             delay(TimeDelay);
-          #endif
+#endif
           
             } // end if ((buffer[0]=='D') && (buffer[1]=='a')) { // is it?
           } // end if (lineCount == 7) { // could be Date/Time string ...
     
         if ((lineCount == 8) || (lineCount == 9)) { // connection closed
         
-        #ifdef LCDcode
+#ifdef LCDcode
           lcd.setCursor(0,1); lcd.print(SixteenSpaces);
-        #endif
+#endif
         
           }
-        if (lineCount == 10) { // AQI pollutant record legend; ignore
-        
-        #ifdef LCDcode
-        #endif
-        
+        if (lineCount == 10) { // AQI pollutant record legend 
+          // ignore for now
           }
+          
         // Look for 6 AQI reading strings 1 each for pollutants measured
         if ((lineCount >= 11) && (lineCount <= 16)) { // could be a data string ...
           if ((buffer[0]=='"') && (buffer[1]=='2')) { // is it?
@@ -957,7 +963,7 @@ void loop() {
           
             // Individlal LCD Line1 example: "AQ ### CLR ZIPCO";
           
-          #ifdef LCDcode
+#ifdef LCDcode
             lcd.clear();
             //lcd.setCursor(0,0); 
             //lcd.print(SixteenSpaces);
@@ -1004,11 +1010,11 @@ void loop() {
             lcd.print(" "); lcd.print(LCDcolor);
             lcd.setCursor(10,0); 
             lcd.print(" "); lcd.print(zipcode);  // *** zip
-          #endif
+#endif
     
             //Individual LCD Line2 example: "PType Qual MM:SS";
           
-          #ifdef LCDcode
+#ifdef LCDcode
             lcd.setCursor(0,1); lcd.print(ElevenSpaces);
             lcd.setCursor(0,1); lcd.print(partInfo[0]);
             lcd.setCursor(5,1); lcd.print(" ");
@@ -1019,7 +1025,7 @@ void loop() {
                   lcd.print(partInfo[3][3]);
                     lcd.setCursor(10,1); lcd.print(" ");
             delay(500);
-          #endif
+#endif
         
             if (atoi(partInfo[1]) > AqiValue) { // higest particulate?
               AqiValue = atoi(partInfo[1]); // yes, remember it
@@ -1232,7 +1238,7 @@ void loop() {
            }
 
           if ((validIRkey == false) && (IRvalue >= 0xB00000) && (IRvalue <= 0xB99999)) {
-            Serial.print("Blynk App ZipCode request r/eceived for ");
+            Serial.print("Blynk App ZipCode request received for ");
             char charVal[6];
             sprintf(charVal, "%06X", IRvalue);
             //strncpy(BlynkZipCode, charVal[1], 5);
@@ -1398,12 +1404,13 @@ void loop() {
           CurrentAQIcolor = 7; // black; 
           }
           
-      #ifdef LCDcode
+#ifdef LCDcode
         lcd.setCursor(0,0); lcd.print(SixteenSpaces); // Last updated
         lcd.setCursor(0,0); lcd.print(location);
         lcd.setCursor(0,1); 
         if (AqiValue >= 0) {
-          lcd.print("AQ update "); 
+          lcd.print("AQ update ");
+          lcd.setCursor(11,1); lcd.print(" "); // 2/21/21 
           lcd.setCursor(10,1); lcd.print(CurrentTime1); //HH
           lcd.setCursor(12,1); lcd.print(" ");
           lcd.setCursor(13,1); lcd.print(CurrentZone1); // TMZ");
@@ -1415,7 +1422,7 @@ void loop() {
         delay(TimeDelay); // currently 3 seconds
         lcd.setCursor(0,0); lcd.print(SixteenSpaces);
         lcd.setCursor(0,1); lcd.print(SixteenSpaces);
-      #endif
+#endif
 
          Serial.println();
          // update the UNO
@@ -1425,10 +1432,10 @@ void loop() {
          if (AqiValue < 0) {
             Serial.print("Not Available");
             
-          #ifdef LCDcode
+#ifdef LCDcode
             lcd.setCursor(0,0); lcd.print(SixteenSpaces); // debug test 1
             lcd.setCursor(11,0); lcd.print(zipcode);
-          #endif
+#endif
           
           }
           else
@@ -1501,7 +1508,7 @@ void loop() {
        {
          int MinutesRemaining = int(TimeRemaining / 60);
       
-    #ifdef LCDcode
+#ifdef LCDcode
       lcd.setCursor(11,1); 
       if (MinutesRemaining < 10) {
         lcd.print("0");
@@ -1517,19 +1524,20 @@ void loop() {
         lcd.setCursor(15,1);
         }
       lcd.print(SecondsRemaining);
-    #endif
+#endif
     
       }
       else
       {
         // time still running; show location
         
-    #ifdef LCDcode
+#ifdef LCDcode
         lcd.setCursor(0,0); lcd.print(SixteenSpaces); // Last updated
         lcd.setCursor(0,0); lcd.print(location);
         lcd.setCursor(0,1); 
         if (AqiValue >= 0) {
-          lcd.print("AQ update "); 
+          lcd.print("AQ update ");
+          lcd.setCursor(11,1); lcd.print(" "); // 2/20/21
           lcd.setCursor(10,1); lcd.print(CurrentTime1); //HH
           lcd.setCursor(12,1); lcd.print(" ");
           lcd.setCursor(13,1); lcd.print(CurrentZone1); // TMZ");
@@ -1542,7 +1550,7 @@ void loop() {
           TimeRemaining = TimeRemaining - ((TimeDelay/1000)-1);
           lcd.setCursor(0,0); lcd.print(SixteenSpaces);
           lcd.setCursor(0,1); lcd.print(SixteenSpaces);
-    #endif
+#endif
     
       }
     
@@ -1554,9 +1562,9 @@ void loop() {
     
     if (lineCount == 9) { // connection closed; data follows
       
-  #ifdef LCDcode
+#ifdef LCDcode
       lcd.setCursor(0,0); lcd.print(SixteenSpaces);
-  #endif
+#endif
   
       }
       
@@ -1570,7 +1578,7 @@ void loop() {
       //lcd.setCursor(0,1); //lcd.print(ElevenSpaces);
       //Final LCD Line2 example: "PType Qual MM:SS";
       
-    #ifdef LCDcode
+#ifdef LCDcode
       lcd.setCursor(0,0);
       if (ZipCodeRoller != false) { // unlocked ?
         lcd.print("AQ "); // yes, show upper-case
@@ -1601,10 +1609,10 @@ void loop() {
       lcd.setCursor(6,0); lcd.print(" ");
       lcd.print(LCDcolor);
       lcd.setCursor(10,0); lcd.print(" ");
-      lcd.print(zipcode);  // *** zip
-    #endif
+      lcd.print(zipcode);
+#endif
 
-    #ifdef LCDcode
+#ifdef LCDcode
       //Final LCD Line2 example -- "PType Qual 12:34";
       //lcd.setCursor(0,1); 
       //lcd.print(ElevenSpaces);
@@ -1614,7 +1622,7 @@ void loop() {
       strncpy(char4, AqiQuality,4);
       lcd.setCursor(6,1); lcd.print(char4);
       lcd.setCursor(10,1); lcd.print(" ");
-    #endif
+#endif
 
         } // end if (lineCount >= 10) { // found data records
       if (ServerDisconnected == true) break;
